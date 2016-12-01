@@ -1,0 +1,89 @@
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
+
+$( function() {
+  $('#gen-taffy').click(onGenTaffy);
+  $('#save-settings').click(onSave);
+  $('#load-settings').click(onLoad);
+});
+
+function onGenTaffy() {
+  this.disabled = true;
+
+  google.script.run
+    .withUserObject(this)
+    .withSuccessHandler(
+      function(html, element) {
+        $('#preview').html(html);
+        $('#copy').val(html);
+        showStatus('Generated successfully.');
+        element.disabled = false;
+      })
+    .withFailureHandler(
+      function(msg, element) {
+        showStatus(msg, 'error')
+        element.disabled = false;
+      })
+    .getJson({
+          'cols': $('#cols').val(),
+         'heads': $('#heads').val(),
+          'incl': $('#incl').val(),
+      'not-incl': $('#not-incl').val(),
+         'items': $('#items').val()
+    });
+}
+
+function onSave() {
+  this.disabled = true;
+
+    google.script.run
+      .withUserObject(this)
+      .withSuccessHandler(
+        function(msg, element) {
+          showStatus('Saved successfully');
+          element.disabled = false;
+        })
+    .withFailureHandler(
+      function(msg, element) {
+        showStatus(msg, 'error');
+        element.disabled = false;
+      })
+    .saveJSONSettings({
+          'cols': $('#cols').val(),
+         'heads': $('#heads').val(),
+          'incl': $('#incl').val(),
+      'not-incl': $('#not-incl').val(),
+         'items': $('#items').val()
+    });
+}
+
+function onLoad() {
+  this.disabled = true;
+
+    google.script.run
+      .withUserObject(this)
+      .withSuccessHandler(
+        function(data, element) {
+              $('#cols').val(data['json_cols']);
+             $('#heads').val(data['json_heads']);
+              $('#incl').val(data['json_incl']);
+          $('#not-incl').val(data['json_not-incl']);
+             $('#items').val(data['json_items']);
+          showStatus('Loaded successfully');
+          element.disabled = false;
+        })
+    .withFailureHandler(
+      function(msg, element) {
+        showStatus(msg, 'error');
+        element.disabled = false;
+      })
+    .loadSettings();
+}
+
+
+function showStatus(msg, classId) {
+  $('#status').removeClass().html(msg);
+  if (classId)
+    $('#status').addClass(classId);
+}
+</script>

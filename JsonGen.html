@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!-- Use a templated HTML printing scriptlet to import common stylesheet. -->
+<?!= HtmlService.createHtmlOutputFromFile('Stylesheet').getContent(); ?>
+
+<div>
+  <h1>
+  Generate a JSON array from a spreadsheet
+  </h1>
+  <div id="button-bar">
+    <form>
+      <label for="#cols">Columns in order separated by commas. For columns with links, format like {link,displaytext}:</label><br>
+      <input id="cols" size="50" placeholder="{L,I}, K, E,   T, {H, I}, S"><br><br>
+
+      <label for="#heads">Column titles in same order:</label><br>
+      <input id="heads" size="50"><br><br>
+
+      <label for="#incl">Column indicating whether or not to include row:</label><br>
+      <input id="incl" size="50"><br><br>
+
+      <label for="#not-incl">Words, numbers, or phrases, separated by commas, in the column entered above indicating removal(empty entries are already discarded):</label><br>
+      <input id="not-incl" size="50" placeholder="0, N/A"><br><br>
+
+      <label for="#items">Number of items in list:</label><br>
+      <input id="items" size="50"><br><br>
+
+      <button id="save-settings">Save Settings</button>
+      <button id="load-settings">Load Settings</button><br><br>
+      <button id="gen-taffy">Generate JSON</button><br><br>
+    </form>
+  </div>
+  <div id="status"></div>
+  <div class="block form-group" id="value-block">
+    <label for="copy">Ctrl+A then Ctrl+C to Copy Code</label><br>
+    <input id="copy" size="30" value=""><br><br>
+    <label for="preview">JSON preview:</label><br>
+    <pre id="preview"></pre>
+  </div>
+</div>
+
+<!-- Use a templated HTML printing scriptlet to import JavaScript. -->
+<?!= HtmlService.createHtmlOutputFromFile('JsonGenJs').getContent(); ?>
