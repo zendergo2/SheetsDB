@@ -1,0 +1,6 @@
+{
+  "name": "SheetDB",
+  "tagline": "A powerful tool to convert a Google Spreadsheet to an HTML table or JSON array.",
+  "body": "# SheetDB\r\n\r\nSheetDB is a powerful tool to export a Google Sheet to an HTML table or JSON array.\r\n\r\n\r\n## Features\r\n\r\n- Custom names for table columns and JSON objects\r\n- Powerful filtering of unwanted data and empty rows\r\n- Add URL's to any column/object\r\n- Directly import JSON into TaffyDB and other JavaScript databases\r\n- Save configuration across users in a spreadsheet\r\n\r\nSheet to Data will export the active sheet into an HTML table or JSON array. The only constraint is that the top row of the sheet is a header. Right now, Sheet to Data does not see or use those header names. This will be added in the future, along with an option to tell Sheet to Data whether a header row is present.\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
