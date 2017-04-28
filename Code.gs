@@ -1,70 +1,62 @@
-function doGet() {
-  return ContentService.createTextOutput('Hello, world!');
-}
-
 function onOpen(e) {
   SpreadsheetApp.getUi()
       .createAddonMenu()
-      .addItem('Sheet to HTML', 'showHtmlGen')
-      .addItem('Sheet to JSON', 'showJsonGen')
-      .addItem('Send Data to URL', 'sendData')
+      .addItem('Sheet to JSON', 'showJSON')
       .addToUi();
 }
 function onInstall(e) {
   onOpen(e);
 }
 
-function showHtmlGen() {
-  var ui = HtmlService.createTemplateFromFile('HtmlGen')
+function showHTML() {
+  var ui = HtmlService.createTemplateFromFile('HTML')
       .evaluate()
       .setTitle('Sheet to HTML');
   SpreadsheetApp.getUi().showDialog(ui);
 }
 
-function showJsonGen() {
-  var ui = HtmlService.createTemplateFromFile('JsonGen')
+function showJSON() {
+  var ui = HtmlService.createTemplateFromFile('JSON')
       .evaluate()
       .setTitle('Sheet to JSON')
       .setHeight(500);
   SpreadsheetApp.getUi().showDialog(ui);
 }
 
-function sendData() {
-  var ui = HtmlService.createTemplateFromFile('SendData')
-      .evaluate()
-      .setTitle('Send Data to URL');
-  SpreadsheetApp.getUi().showModalDialog(ui, 'SendData2');
-}
-
-function saveJSONSettings (input) {
+function saveJSONSettings (settings) {
   var documentProperties = PropertiesService.getDocumentProperties();
   documentProperties.setProperties({
-    'json_cols': input.cols,
-    'json_heads': input.heads,
-    'json_incl': input.incl,
-    'json_not-incl': input['not-incl'],
-    'json_items': input.items,
+    'json_settings': JSON.stringify(settings)
   });
   return true;
 }
 
-function saveHTMLSettings (input) {
+function loadJSONSettings () {
+  var props = PropertiesService.getDocumentProperties().getProperties();
+  return props['json_settings'];
+}
+
+function saveHTMLSettings (settings) {
   var documentProperties = PropertiesService.getDocumentProperties();
   documentProperties.setProperties({
-    'html_cols': input.cols,
-    'html_heads': input.heads,
-    'html_incl': input.incl,
-    'html_not-incl': input['not-incl'],
-    'html_items': input.items,
+    'html_settings': JSON.stringify(settings)
   });
   return true;
 }
 
-
-function loadSettings (callback) {
-  return PropertiesService.getDocumentProperties().getProperties();
+function loadHTMLSettings () {
+  var props = PropertiesService.getDocumentProperties().getProperties();
+  return props['html_settings'];
 }
 
+function getSheetsHTML () {
+  var result = '<option value="" selected>Current Sheet</option>',
+      sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    result += '<option value=' + sheets[i].getSheetId() + '>' + sheets[i].getSheetName() + '</option>';
+  }
+  return result;
+}
 
 function getHtml(input) {
   var data = getData(input),
@@ -92,86 +84,243 @@ function getHtml(input) {
     result += '</tr>';
   }
   result += '</tbody></table>';
-
+  
   return result;
 }
 
-function getJson(input) {
-  var data = getData(input),
+function getJSON(input) {
+  var data = [],
       heads = [],
       i = 0;
-  //build header
-  while (data[i]) {
-    heads.push(data[i].head);
-    ++i;
-  }
-
-  var rows = [];
-  //build rows (for each of n rows, make i cols)
-  for (var n = 0; n < input['items']; ++n) {
-    var cells = [];
-    i = 0;
-    while (data[i]) {
-      if (data[i].link && data[i].links[n] != undefined) {
-        cells.push('"' + heads[i] + '_link": "' + data[i].links[n] + '"');
+  
+  // get data from each form
+  input.forEach(function(elem, idx) {
+    data.push(getData(elem));
+  });
+  // data in form of:
+  //   [form #][col #][row|row_link][row #] = cell value
+  
+  var forms = [];
+  
+  // for each form f = [form #]
+  for (var f = 0; f < data.length; f++) {
+    var rows = [];
+    
+    // for each row r = [row #]
+    // All rows should be the same number of items
+    for (var r = 0; r < data[f][0]['row'].length; r++) {
+      var cells = {};
+      
+      // for each column c = [col #]
+      for (var c = 0; c < data[f].length; c++) {
+        
+        // Add cell to object (title of col -> value of each row)
+        var title = data[f][c]['title'].toLowerCase(),
+            row = data[f][c]['row'][r];
+        cells[title] = row[0];
+        
+        // if a row link exists, Add cell to object
+        if (data[f][c]['row_link']) {
+          var row_link = data[f][c]['row_link'][r];
+          cells[title + '_link'] = row_link[0];
+        }
       }
-      if (data[i].text && data[i].texts[n] != undefined) {
-        cells.push('"' + heads[i] + '": "' + data[i].texts[n] + '"');
+      
+      if (cells) {
+        rows.push(cells);
       }
-      ++i;
     }
-    if (cells) {
-      rows.push(cells.join(', '));
+    
+    if (rows) {
+      forms.push(rows);
     }
   }
-  return '[{' + rows.join('}, \n{') + '}]';
+  return forms;
 }
 
-function getData(input) {
-  input = (input || {'cols': '{A, B}, C', 'heads': 'One, Two', 'incl': 'A', 'not-incl': 'This, That', 'items': 100});
-  //extract cols
-  //  regex for matching and capturing this -> "{A, B}, C..." etc.
-  var regex = /(?:(\w)|{(\w), *(\w)})/g,
+// Collects data from sheet given form data
+// Outputs JSON in form of:
+//   [col #]['row'|'row_link'][row #] = value
+function getData(form) {
+  if (!form) { return; }
+  //extract form into structure data[field name] => field value
+  var data = {};
+  form.forEach(function(elem, idx) {
+    switch (elem.type) {
+      case 'text':
+      case 'number':
+        // Text inputs
+        data[elem.name] = elem.value;
+        break;
+      case 'radio':
+        // Radio buttons
+        if (elem.checked === true) {
+          data[elem.name] = elem.value;
+        }
+        break;
+      case 'checkbox':
+        // Checkboxes
+        data[elem.name] = elem.checked;
+        break;
+      case 'select-one':
+        // select tag
+        data[elem.name] = elem.value;
+      default:
+        // unknown
+        break;
+    } 
+  });
+  // data now contains all form data
+  
+  //  regex for matching and capturing "{A, B}, C..." etc.
+  var regex = /(?:(\w+)|{(\w+)[, ]*(\w+)})/g,
       matches,
-      result = {};
-  for (var i = 0; (matches = regex.exec(input['cols'])) !== null; ++i) {
+      columns = [];
+  // (required) data['columns'] is the only field that needs to be filled out
+  for (var i = 0; (matches = regex.exec(data['columns'])) !== null; i++) {
     if (matches.index === regex.lastIndex) {
       regex.lastIndex++;
     }
     // {A, B}
     if (matches[2] && matches[3])
-      result[i] = {'link': matches[2].toLowerCase().charCodeAt(0) - 96,
-                   'text': matches[3].toLowerCase().charCodeAt(0) - 96};
+      columns[i] = {'link_col': matches[2].toLowerCase().charCodeAt(0) - 96,
+                   'text_col': matches[3].toLowerCase().charCodeAt(0) - 96};
     // C
     if (matches[1])
-      result[i] = {'text': matches[1].toLowerCase().charCodeAt(0) - 96};
+      columns[i] = {'text_col': matches[1].toLowerCase().charCodeAt(0) - 96};
   }
-
-  //extract data and headers
-  var sheet = SpreadsheetApp.getActiveSheet(),
-      heads = input['heads'].split(/, */),
-      incl = sheet.getRange(2, input['incl'].toLowerCase().charCodeAt(0) - 96, input['items']).getValues();
+  // columns now contains json for columns to use
+  
+      // (optional) Sheet "sheet-name" or current sheet if no name given 
+  var sheet = (data['sheet-id'] ? getSheetById(data['sheet-id']) : SpreadsheetApp.getActiveSheet()),
+      // (optional) column titles from form or sheet (or nothing if both don't exist);
+      titles = (data['titles'] ? data['titles'].split(/, */) : getTitles(sheet, columns)),
+      // (required) row number that data starts on
+      dataRowStart = (data['row-1-data'] === 'data') ? 1 : 2,
+      // (optional) number of rows in table or programmatically count them
+      size = (data['size'] ? data['size'] : countCol(sheet, 'A', dataRowStart)),
+      // (optional) column nunmber to filter with or false
+      filterCol = (data['filter-column'] ? data['filter-column'].toLowerCase().charCodeAt(0) - 96 : false),
+      // (optional) data from the column used to filter out rows or false
+      filterColData = (filterCol ? sheet.getRange(dataRowStart, filterCol, size).getValues() : false),
+      // (optional) strings for filtering or false
+      filterCriteria = (filterCol && data['filter-criteria'] ? data['filter-criteria'].split(/, */): false);
+  
+  if (titles === false) {
+    throw 'Required information not provided';
+  }
+  
+  if (data['remove-empty'] === true) {
+    if (filterCriteria === false) {
+      filterCol = 1;
+      filterColData = sheet.getRange(dataRowStart, filterCol, size).getValues();
+      filterCriteria = [];
+    }
+    filterCriteria.push("");
+  }
+  
   i = 0;
-  while (result[i]) {
-    result[i].head = heads[i];
-    if (result[i].link)
-      result[i].links = scrubArr(sheet.getRange(2, result[i].link, input['items']).getValues(), incl, input['not-incl'].split(/, */));
-    if (result[i].text)
-      result[i].texts = scrubArr(sheet.getRange(2, result[i].text, input['items']).getValues(), incl, input['not-incl'].split(/, */));
-    ++i;
+  while (columns[i]) {
+    columns[i].title = titles[i];
+    if (columns[i].link_col) {
+      var linkColData = sheet.getRange(dataRowStart, columns[i].link_col, size).getValues();
+      columns[i].row_link = colFilter(linkColData, filterColData, filterCriteria);
+    }
+    if (columns[i].text_col) {
+      var textColData = sheet.getRange(dataRowStart, columns[i].text_col, size).getValues();
+      columns[i].row = colFilter(textColData, filterColData, filterCriteria);
+    }
+    i++;
+  }
+  return columns;
+}
+
+// Takes a column, filter column, filter to removes filtered rows from currCol 
+function colFilter(currCol, filterCol, filter) {
+  if (filterCol === false || filter === false) {
+    return currCol;
+  }
+  var n = 0,
+      result = currCol;
+  for (var i = 0; i < filterCol.length; i++) {
+    if (filter.indexOf(filterCol[i][0]) != -1) {
+      result.splice(n, 1);
+      n--;
+    }
+    n++;
   }
   return result;
 }
 
-function scrubArr(arr, col, vals) {
-  vals.push("");
-  var n = 0;
-  for (var i = 0; i < col.length; ++i) {
-    if (vals.indexOf(col[i][0]) != -1) {
-      arr.splice(n, 1);
-      --n;
+function getTitles (sheet, columns) {
+  var allCols = sheet.getRange('A1:1'),
+      result = [];
+  
+  for (var i = 0; i < columns.length; i++) {
+    if (columns[i].text_col) {
+      var val = allCols.getCell(1, columns[i].text_col).getValue();
+      
+      // If we need to look at cells for titles and at least one is blank, throw error
+      if (val === "") {
+        return false;
+      }
+      result.push(val);
     }
-    ++n;
   }
-  return arr;
+  
+  if (result.length === 0) {
+    return false;
+  }
+  return result;
+}
+
+// Probably inferior implementation of the Google Sheets COUNT function
+// Finds where the end of the row is
+function countCol (sheet, col, rowStart) {
+  if (typeof col !== 'string') {
+    return -1;
+  }
+  // Finds approximately (+- 50) where the end of the row is
+  var range = sheet.getRange(col + rowStart + ':' + col),
+      off = 50,
+      count = 0,
+      numRows = range.getNumRows();
+  while (count < numRows) {
+    if (range.isBlank()) {
+      break;
+    }
+    else {
+      range = range.offset(off, 0, numRows - count);
+      count += off;
+    }
+  }
+  // Now that we've overshot by <= off, backtrack until we reach a value
+  // we want range to now be the `off` values we skipped
+  range = range.offset(-off, 0, off);
+  count -= off;
+  numRows = range.getNumRows();
+  off = 1;
+  var tempCount = 0;
+  
+  while (tempCount < numRows) {
+    if (range.isBlank()) {
+      break;
+    }
+    else {
+      range = range.offset(off, 0, numRows - tempCount);
+      tempCount += off;
+    }
+  }
+  count += tempCount;
+  return count;
+}
+
+function getSheetById(id) {
+  var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getSheetId() === parseInt(id)) {
+      return sheets[i];
+    }
+  }
 }

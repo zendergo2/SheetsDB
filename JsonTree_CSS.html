@@ -1,0 +1,86 @@
+<style>
+/*
+ * JSON Tree Viewer
+ * http://github.com/summerstyle/jsonTreeViewer
+ *
+ * Copyright 2016 Vera Lobacheva (http://iamvera.com)
+ * Released under the MIT license (LICENSE.txt)
+ */
+.tree {
+    margin-left: 0;
+    padding: 0;
+    list-style: none;
+    font-family: 'PT Mono', monospace;
+    font-size: 14px;
+}
+.children {
+    display: none;
+    list-style: none;
+    margin-left: 12px; 
+    margin-bottom: 5px;
+    line-height: 1.5;
+}
+.expanded > .value > .children {
+    display: block;
+}
+.name_wrapper {
+    float: left;
+    margin-right: 8px;
+}
+.name {
+    font-weight: normal;
+    vertical-align: top;
+    color: #000;
+    position: relative;
+}
+.expand_button {
+    position: absolute;
+    top: 5px;
+    left: -15px;
+    display: block;
+    width: 9px;
+    height: 9px;
+    background: #777;
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gUBFAsKjLIEkwAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAQElEQVQI14WPyw0AMAhCrenOMAJb24OHNvb3ThiFYIsIkrYhyQDECQC+3pYAtzu9OFJImrscSKb4Z3rtvdAe/w3I7C/CeujfAgAAAABJRU5ErkJggg==);
+}
+.expanded > .name_wrapper > .name > .expand_button {
+    background: #FFF;
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gUBFAwe2SlGKQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAARUlEQVQI132PwQ3AMAwCjdWd8QhMbfrIo1Ga5D4IYYEM21UVPyQFSe8gmfOt7dlmnHmGLJOSvmyY7s7MfSeA496S4fLfC/74Ll1MLvV+AAAAAElFTkSuQmCC);
+}
+.show_more {
+    cursor: pointer;
+}
+.expanded > .value > .show_more {
+    display: none;
+}
+.empty > .name_wrapper > .name > .expand_button,
+.empty > .value > .show_more {
+    display: none !important;
+}
+.object > .name_wrapper > .name,
+.array > .name_wrapper > .name {
+    cursor: pointer;
+}
+.empty > .name_wrapper > .name {
+    cursor: default !important;
+}
+.value { 
+    vertical-align: top;
+}
+.null > .value {
+    color: #777;
+    font-weight: bold;
+}
+.string > .value {
+    color: #025900;
+    font-weight: bold;
+}
+.number > .value {
+    color: #000E59;
+    font-weight: bold;
+}
+.boolean > .value {
+    color: #600100;
+    font-weight: bold;
+}
+</style>
