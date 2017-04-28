@@ -1,6 +1,6 @@
-# SheetDB
+# SheetsDB
 
-A powerful Google Drive App for Google Sheets that converts a Spreadsheet to an HTML table or JSON array.
+A powerful Google Drive App for Google Sheets that converts Google Spreadsheets into JSON or HTML files.
 
 
 ## Features
