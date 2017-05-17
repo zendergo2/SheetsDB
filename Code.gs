@@ -13,44 +13,32 @@ function showHTML() {
   var ui = HtmlService.createTemplateFromFile('HTML')
       .evaluate()
       .setTitle('Sheet to HTML');
-  SpreadsheetApp.getUi().showDialog(ui);
+  SpreadsheetApp.getUi().showSidebar(ui);
 }
 
 function showJSON() {
   var ui = HtmlService.createTemplateFromFile('JSON')
       .evaluate()
       .setTitle('Sheet to JSON');
-  SpreadsheetApp.getUi().showDialog(ui);
+  SpreadsheetApp.getUi().showSidebar(ui);
 }
 
-function saveJSONSettings (settings) {
-  var documentProperties = PropertiesService.getDocumentProperties();
-  documentProperties.setProperties({
-    'json_settings': JSON.stringify(settings)
-  });
+function saveSettings (type, settings) {
+  var documentProperties = PropertiesService.getDocumentProperties(),
+      f_settings = {};
+  
+  f_settings[type+'_settings'] = JSON.stringify(settings);
+  documentProperties.setProperties(f_settings);
   return true;
 }
 
-function loadJSONSettings () {
+function loadSettings (type) {
   var props = PropertiesService.getDocumentProperties().getProperties();
-  return props['json_settings'];
-}
-
-function saveHTMLSettings (settings) {
-  var documentProperties = PropertiesService.getDocumentProperties();
-  documentProperties.setProperties({
-    'html_settings': JSON.stringify(settings)
-  });
-  return true;
-}
-
-function loadHTMLSettings () {
-  var props = PropertiesService.getDocumentProperties().getProperties();
-  return props['html_settings'];
+  return props[type+'_settings'];
 }
 
 // Gets a list of all sheets in the spreadsheet in <option> tags
-function getSheetsHTML () {
+function getSheets () {
   var result = '<option value="" selected>Current Sheet</option>',
       sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
   for (var i = 0; i < sheets.length; i++) {
@@ -59,7 +47,20 @@ function getSheetsHTML () {
   return result;
 }
 
-function getHTML(input) {
+function getExport(type, input) {
+  switch (type) {
+    case 'html':
+      return _getHTML(input);
+      break;
+    case 'json':
+      return _getJSON(input);
+      break;
+    default:
+      throw 'Export type not known/defined';
+  }
+}
+
+function _getHTML(input) {
   var data = [],
       heads = [],
       i = 0;
@@ -119,7 +120,7 @@ function getHTML(input) {
   return forms;
 }
 
-function getJSON(input) {
+function _getJSON(input) {
   var data = [],
       heads = [],
       i = 0;

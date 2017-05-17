@@ -3,7 +3,8 @@
 
 var form_template = '',
     results_template = '',
-    table_count = 0;
+    table_count = 0,
+    export_type = 'json';
 
 $( function() {
   $('#options-save').click(saveSettings);
@@ -28,7 +29,7 @@ function fillSheetNames (selector) {
       function(msg, element) {
         showStatus(msg, 'error');
       })
-    .getSheetsHTML();
+    .getSheets();
 }
 
 // Save settings to current document's cloud storage
@@ -47,7 +48,7 @@ function saveSettings() {
         showStatus(msg, 'error');
         element.disabled = false;
       })
-    .saveJSONSettings(_getFormData());
+    .saveSettings(export_type, _getFormData());
 }
 
 // Load settings from current document's storage
@@ -103,7 +104,7 @@ function loadSettings() {
         showStatus(msg, 'error');
         element.disabled = false;
       })
-    .loadJSONSettings();
+    .loadSettings(export_type);
 }
 
 // Adds another table to the current form
@@ -131,6 +132,7 @@ function generateJSON() {
             results_count++;
           }
           
+          // change based on type of export
           var result = document.querySelector('#results-' + i + ' > .results-preview');
           result.innerHTML = '';
           
@@ -148,7 +150,7 @@ function generateJSON() {
         showStatus(msg, 'error')
         element.disabled = false;
       })
-    .getJSON(_getFormData());
+    .getExport(export_type, _getFormData());
 }
 
 // Adds another table to the current form

@@ -3,13 +3,14 @@
 
 var form_template = '',
     results_template = '',
-    table_count = 0;
+    table_count = 0,
+    export_type = 'html';
 
 $( function() {
   $('#options-save').click(saveSettings);
   $('#options-load').click(loadSettings);
   $('#options-add').click(addTable);
-  $('#options-generate').click(generateHTML);
+  $('#options-generate').click(generate);
   
   fillSheetNames('#form-0 select[name="sheet-id"]');
   
@@ -28,7 +29,7 @@ function fillSheetNames (selector) {
       function(msg, element) {
         showStatus(msg, 'error');
       })
-    .getSheetsHTML();
+    .getSheets();
 }
 
 // Save settings to current document's cloud storage
@@ -47,7 +48,7 @@ function saveSettings() {
         showStatus(msg, 'error');
         element.disabled = false;
       })
-    .saveHTMLSettings(_getFormData());
+    .saveSettings(export_type, _getFormData());
 }
 
 // Load settings from current document's storage
@@ -103,7 +104,7 @@ function loadSettings() {
         showStatus(msg, 'error');
         element.disabled = false;
       })
-    .loadHTMLSettings();
+    .loadSettings(export_type);
 }
 
 // Adds another table to the current form
@@ -114,9 +115,9 @@ function addTable() {
     fillSheetNames('#form-' + table_count + ' select[name="sheet-id"]');
 }
 
-// Calls Code.gs functions to generate HTML from settings
-function generateHTML() {
-  //this.disabled = true;
+// Calls Code.gs functions to generate export from settings
+function generate() {
+  this.disabled = true;
   
   google.script.run
     .withUserObject(this)
@@ -130,7 +131,7 @@ function generateHTML() {
             addResults(results_count);
             results_count++;
           }
-          
+          // change based on type of export
           var result = document.querySelector('#results-' + i + ' > .results-preview');
           result.innerHTML = data[i-1];
         
@@ -145,7 +146,7 @@ function generateHTML() {
         showStatus(msg, 'error')
         element.disabled = false;
       })
-    .getHTML(_getFormData());
+    .getExport(export_type, _getFormData());
 }
 
 // Adds another table to the current form
