@@ -2,6 +2,7 @@ function onOpen(e) {
   SpreadsheetApp.getUi()
       .createAddonMenu()
       .addItem('Sheet to JSON', 'showJSON')
+      .addItem('Sheet to HTML', 'showHTML')
       .addToUi();
 }
 function onInstall(e) {
@@ -18,8 +19,7 @@ function showHTML() {
 function showJSON() {
   var ui = HtmlService.createTemplateFromFile('JSON')
       .evaluate()
-      .setTitle('Sheet to JSON')
-      .setHeight(500);
+      .setTitle('Sheet to JSON');
   SpreadsheetApp.getUi().showDialog(ui);
 }
 
@@ -59,34 +59,64 @@ function getSheetsHTML () {
   return result;
 }
 
-function getHtml(input) {
-  var data = getData(input),
-      result = '<table class="gdocs-table"><thead><tr>',
+function getHTML(input) {
+  var data = [],
+      heads = [],
       i = 0;
-  //build header
-  while (data[i]) {
-   result += '<th>'+data[i].head+'</th>';
-    ++i;
-  }
-  result += '</tr></thead><tbody>';
-  //build rows (for each of n rows, make i cols)
-  for (var n = 0; n < input['items']; ++n) {
-    i = 0;
-    result += '<tr>';
-    while (data[i]) {
-      if (data[i].link && data[i].links[n] != undefined) {
-        result += '<td><a href="' +data[i].links[n]+ '">' +data[i].texts[n]+ '</a></td>';
-      }
-      else if (data[i].text && data[i].texts[n] != undefined) {
-        result += '<td>' +data[i].texts[n]+ '</td>';
-      }
-      ++i;
-    }
-    result += '</tr>';
-  }
-  result += '</tbody></table>';
   
-  return result;
+  // get data from each form
+  input.forEach(function(elem, idx) {
+    data.push(getData(elem));
+  });
+  // data in form of:
+  //   [form #][col #][row|row_link][row #] = cell value
+  
+  var forms = [];
+  
+  // for each form f = [form #]
+  for (var f = 0; f < data.length; f++) {
+    var html_head = '<thead>',
+        html_body = '<tbody>';
+    
+    /** For column titles **/
+    
+    // for each column c = [col #]
+    for (var c = 0; c < data[f].length; c++) {
+      var title = data[f][c]['title'];
+      html_head += '<th>'+title+'</th>';
+    }
+    
+    /** For data rows **/
+    
+    // for each row r = [row #]
+    // All rows should be the same number of items
+    for (var r = 0; r < data[f][0]['row'].length; r++) {
+      html_body += '<tr>';
+      
+      // for each column c = [col #]
+      for (var c = 0; c < data[f].length; c++) {
+        
+        // (title of col -> value of each row)
+        var row = data[f][c]['row'][r],
+            row_link = '';
+        // if a row link exists, Add cell to object
+        if (data[f][c]['row_link']) {
+          row_link = data[f][c]['row_link'][r];
+        }
+        
+        html_body += '<td>'+row+'</td>';
+      }
+      
+      html_body += '</tr>';
+    }
+    
+    
+    html_head += '</thead>';
+    html_body += '</tbody>';    
+    
+    forms.push('<table>' + html_head + html_body + '</table>');
+  }
+  return forms;
 }
 
 function getJSON(input) {

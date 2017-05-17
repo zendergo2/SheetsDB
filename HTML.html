@@ -1,40 +1,62 @@
+<!DOCTYPE html>
 <!-- Use a templated HTML printing scriptlet to import common stylesheet. -->
-<?!= HtmlService.createHtmlOutputFromFile('Stylesheet').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('CSS').getContent(); ?>
 
 <div>
-  <h1>
-  Generate an HTML table from a spreadsheet
+	<h1>
+  Export to HTML
   </h1>
-  <div id="button-bar">
-    <form>
-      <label for="#cols">Column numbers in order separated by a comma and space. For columns with links, format like {link,displaytext}:</label><br>
-      <input id="cols" size="50" placeholder="{L,I}, K, E,   T, {H, I}, S"><br><br>
+	<div class="block tables">
+		<div class="block table" id="form-0">
+			<form>
+				<label>Name of Sheet (default is currently open sheet)<small>This is not referring to the Google Sheets file, but the currently open table</small></label>
+				<select name="sheet-id"></select>
+				<label>Columns to export (required, comma-separated)<small>Spaces are removed. For columns with links, format like {link, displaytext}</small></label>
+				<input type="text" name="columns" size="50" placeholder="{L,I}, K, E,   T, {H, I}, S" required>
 
-      <label for="#heads">Column header titles in same order:</label><br>
-      <input id="heads" size="50"><br><br>
+				<label>Is row 1 data or titles?</label>
+				<input type="radio" name="row-1-data" value="data"> <label>Row 1 contains data</label><br>
+				<input type="radio" name="row-1-data" value="titles" checked> <label>Row 1 contains row titles</label>
 
-      <label for="#incl">Column indicating whether or not to include row:</label><br>
-      <input id="incl" size="50"><br><br>
+				<div class="tab">
+					<label>Column titles in same order (semi-optional, comma-separated)<small>Required if row 1 contains data. Optional if you want to override row 1 titles.</small></label>
+					<input type="text" name="titles" size="50" placeholder="Apples, Oranges, Peaches">
+				</div>
 
-      <label for="#not-incl">Words, numbers, or phrases, separated by commas, in the column entered above indicating removal(empty entries are already discarded):</label><br>
-      <input id="not-incl" size="50" placeholder="0, N/A"><br><br>
+				<label>Column to use for filtering (optional)<small>Filtering can occur on one column.</small></label>
+				<input type="text" name="filter-column" size="3">
 
-      <label for="#items">Number of items in list:</label><br>
-      <input id="items" size="50"><br><br>
+				<div class="tab">
+					<label>Text to filter (optional, comma-separated)<small>We look at the column chosen in previous field. Filters <i>out</i> all rows that match text.</small></label>
+					<input type="text" name="filter-criteria" size="50" placeholder="0, N/A, Canceled">
+				</div>
 
-      <button id="save-settings">Save Settings</button>
-      <button id="load-settings">Load Settings</button><br><br>
-      <button id="gen-html">Generate HMTL</button><br><br>
-    </form>
-  </div>
-  <div id="status"></div>
-  <div class="block form-group" id="value-block">
-    <label for="copy">Ctrl+A then Ctrl+C to Copy Code</label><br>
-    <input id="copy" size="30" value=""><br><br>
-    <label for="preview">HTML preview:</label><br>
-    <div id="preview"></div>
-  </div>
+				<label>Remove empty rows?</label>
+				<input type="checkbox" name="remove-empty">
+
+				<label>Number of rows (optional)<small>If omitted, we will guess using the first column of data.</small></label>
+				<input type="number" name="size" size="50">
+			</form>
+		</div>
+	</div>
+
+	<div class="block options">
+		<button id="options-save">Save Settings</button>
+		<button id="options-load">Load Settings</button>
+		<button id="options-add" class="action">Add a Table</button>
+		<button id="options-generate" class="create">Generate</button>
+	</div>
+    <pre class="block" id="status"></pre>
+    <div class="block results-list">
+	<div class="block results" id="results-1">
+		<label>Copy</label>
+		<input type="text" readonly="readonly" class="results-copy" size="30" value="" onClick="this.select()">
+		
+        <label>Preview:</label><br>
+		<p class="results-preview"></p>
+	</div>
+    </div>
 </div>
 
 <!-- Use a templated HTML printing scriptlet to import JavaScript. -->
-<?!= HtmlService.createHtmlOutputFromFile('HtmlGenJs').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('HTML_JS').getContent(); ?>
