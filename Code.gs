@@ -49,6 +49,7 @@ function loadHTMLSettings () {
   return props['html_settings'];
 }
 
+// Gets a list of all sheets in the spreadsheet in <option> tags
 function getSheetsHTML () {
   var result = '<option value="" selected>Current Sheet</option>',
       sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();

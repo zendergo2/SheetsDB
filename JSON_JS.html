@@ -1,64 +1,232 @@
-<!DOCTYPE html>
-<!-- Use a templated HTML printing scriptlet to import common stylesheet. -->
-<?!= HtmlService.createHtmlOutputFromFile('CSS').getContent(); ?>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
 
-<div>
-	<h1>
-  Generate JSON
-  </h1>
-	<div class="block tables">
-		<div class="block table" id="form-0">
-			<form>
-				<label>Name of Sheet (default is currently open sheet)<small>This is not referring to the Google Sheets file, but the currently open table</small></label>
-				<select name="sheet-id"></select>
-				<label>Columns to convert separated by commas  (required, comma-separated)<small>Spaces are removed. For columns with links, format like {link, displaytext}</small></label>
-				<input type="text" name="columns" size="50" placeholder="{L,I}, K, E,   T, {H, I}, S" required>
+var form_template = '',
+    results_template = '',
+    table_count = 0;
 
-				<label>Is row 1 data or titles?</label>
-				<input type="radio" name="row-1-data" value="data"> <label>Row 1 contains data</label><br>
-				<input type="radio" name="row-1-data" value="titles" checked> <label>Row 1 contains row titles</label>
+$( function() {
+  $('#options-save').click(saveSettings);
+  $('#options-load').click(loadSettings);
+  $('#options-add').click(addTable);
+  $('#options-generate').click(generateJSON);
+  
+  fillSheetNames('#form-0 select[name="sheet-id"]');
+  
+  form_template = $('.tables').first().html();
+  results_template = $('.results-list').first().html();
+});
 
-				<div class="tab">
-					<label>Column titles in same order (semi-optional, comma-separated)<small>Required if row 1 contains data. Optional if you want to override row 1 titles.</small></label>
-					<input type="text" name="titles" size="50" placeholder="Apples, Oranges, Peaches" required>
-				</div>
+// Fills select box with all sheet names
+function fillSheetNames (selector) {
+  google.script.run
+    .withSuccessHandler(
+      function(data, element) {
+        $(selector).html(data);
+      })
+    .withFailureHandler(
+      function(msg, element) {
+        showStatus(msg, 'error');
+      })
+    .getSheetsHTML();
+}
 
-				<label>Column to use for filtering (optional)<small>Filtering can occur on one column.</small></label>
-				<input type="text" name="filter-column" size="3">
+// Save settings to current document's cloud storage
+function saveSettings() {
+  this.disabled = true;
+  
+  google.script.run
+    .withUserObject(this)
+    .withSuccessHandler(
+      function(msg, element) {
+        showStatus('Saved successfully');
+        element.disabled = false;
+      })
+    .withFailureHandler(
+      function(msg, element) {
+        showStatus(msg, 'error');
+        element.disabled = false;
+      })
+    .saveJSONSettings(_getFormData());
+}
 
-				<div class="tab">
-					<label>Text to filter (optional, comma-separated)<small>We look at the column chosen in previous text box. Filters <i>out</i> all rows that match text.</small></label>
-					<input type="text" name="filter-criteria" size="50" placeholder="0, N/A, Canceled">
-				</div>
+// Load settings from current document's storage
+function loadSettings() {
+  this.disabled = true;
+  
+  function fillForm (data, element) {
+    var settings = JSON.parse(data),
+        form_count = $('.table').length;
+    
+    // Each set of forms
+    settings.forEach(function(elem, idx) {
+      // For all forms not already present
+      while (idx >= form_count) {
+        // add a form
+        addTable();
+        form_count++;
+      }
+      var currForm = $('.table')[idx];
+      elem.forEach(function(elem, idx) {
+        switch (elem.type) {
+          case 'text':
+          case 'number':
+            $(currForm).find('input[name="'+ elem.name +'"]').val(elem.value);
+            break;
+          case 'radio':
+            $(currForm).find('input[name="'+ elem.name +'"][value="'+ elem.value +'"]').prop('checked', elem.checked);
+            break;
+          case 'checkbox':
+            $(currForm).find('input[name="'+ elem.name +'"]').prop('checked', elem.checked);
+            break;
+          case 'select-one':
+            $(currForm).find('select[name="' + elem.name + '"]').val(elem.value);
+            break;
+          default:
+            console.log('Unknown/unsupported form field');
+            showStatus('Unknown/unsupported form field', 'error');
+            console.log(elem);
+            break;
+        }
+      });
+    });
+    
+    showStatus('Loaded successfully');
+    element.disabled = false;
+  }
+  
+  google.script.run
+    .withUserObject(this)
+    .withSuccessHandler(fillForm)
+    .withFailureHandler(
+      function(msg, element) {
+        showStatus(msg, 'error');
+        element.disabled = false;
+      })
+    .loadJSONSettings();
+}
 
-				<label>Remove empty rows?</label>
-				<input type="checkbox" name="remove-empty" checked>
+// Adds another table to the current form
+function addTable() {
+    table_count++;
+    $('.tables').first().append(form_template);
+    $('.table:last-of-type')[0].id = 'form-' + table_count;
+    fillSheetNames('#form-' + table_count + ' select[name="sheet-id"]');
+}
 
-				<label>Number of rows (optional)<small>If omitted, we will guess using COUNT on the first column of data.</small></label>
-				<input type="number" name="size" size="50">
-			</form>
-		</div>
-	</div>
+// Calls Code.gs functions to generate JSON from settings
+function generateJSON() {
+  this.disabled = true;
+  
+  google.script.run
+    .withUserObject(this)
+    .withSuccessHandler(
+      function(data, element) {
+        var results_count = $('.results').length;
+        
+        // Print out results per form/table
+        for (var i = 1; i <= data.length; i++) {
+          if (i > results_count) {
+            addResults(results_count);
+            results_count++;
+          }
+          
+          var result = document.querySelector('#results-' + i + ' > .results-preview');
+          result.innerHTML = '';
+          
+          var f_data = { data: data[i - 1] };
+          var tree = jsonTree.create(f_data, result);
+        
+          $('#results-' + i + ' > .results-copy').val(JSON.stringify(data[i-1]));
+        }
+        showStatus('Generated successfully.');
+        element.disabled = false;
+      })
+    .withFailureHandler(
+      function(msg, element) {
+        console.log(msg);
+        showStatus(msg, 'error')
+        element.disabled = false;
+      })
+    .getJSON(_getFormData());
+}
 
-	<div class="block options">
-		<button id="options-save">Save Settings</button>
-		<button id="options-load">Load Settings</button>
-		<button id="options-add" class="action">Add a Table</button>
-		<button id="options-generate" class="create">Generate JSON</button>
-	</div>
-    <pre class="block" id="status"></pre>
-    <div class="block results-list">
-	<div class="block results" id="results-1">
-		<label>Copy JSON</label>
-		<input type="text" readonly="readonly" class="results-copy" size="30" value="" onClick="this.select()">
-		
-        <label>JSON preview:</label><br>
-		<p class="results-preview"></p>
-	</div>
-    </div>
-</div>
+// Adds another table to the current form
+function addResults(count) {
+    $('.results-list').first().append(results_template);
+    $('.results:last-of-type')[0].id = 'results-' + (count + 1);
+}
 
-<!-- Use a templated HTML printing scriptlet to import JavaScript. -->
-<?!= HtmlService.createHtmlOutputFromFile('JsonTree_JS').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('JsonTree_CSS').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('JSON_JS').getContent(); ?>
+// Gets data from form
+function _getFormData () {
+  /** This is a design pattern for going through nested .each-like loops **/
+  // state is bound to each function
+  var state = {};
+  // settings is 2d array, # of forms x # inputs per form
+  state.settings = [];
+  // outer loop's index needs to be passed into goThroughInputs
+  state.out_idx = 0;
+  
+  // Inner loop
+  function goThroughInputs (in_idx, elem) {
+    this.settings[this.out_idx][in_idx] = {};
+    this.settings[this.out_idx][in_idx]['name'] = elem.name;
+    this.settings[this.out_idx][in_idx]['type'] = elem.type;
+    switch (elem.type) {
+      case 'text':
+      case 'number':
+        // Text inputs
+        this.settings[this.out_idx][in_idx]['value'] = elem.value;
+        break;
+      case 'radio':
+        // Radio buttons
+        this.settings[this.out_idx][in_idx]['value'] = elem.value;
+        this.settings[this.out_idx][in_idx]['checked'] = elem.checked;
+        break;
+      case 'checkbox':
+        // Checkboxes
+        this.settings[this.out_idx][in_idx]['checked'] = elem.checked;
+        break;
+      case 'select-one':
+        this.settings[this.out_idx][in_idx]['value'] = $(elem).find(':selected').val();
+        break;
+      default:
+        console.log('Unknown/unsupported form field');
+        showStatus('Unknown/unsupported form field', 'error');
+        console.log($(elem));
+        break;
+    }
+  }
+  
+  // Outer loop
+  function goThroughForms (idx, elem) {
+    this.settings[idx] = [];
+    
+    var inputs = $(elem).find('input'),
+        selects = $(elem).find('select');
+    
+    for (var i = 0; i < selects.length; i++) {
+      inputs.push(selects[i]);
+    }
+    
+    this.out_idx = idx;
+    inputs.each(goThroughInputs);
+  }
+  
+  goThroughInputs = goThroughInputs.bind(state);
+  goThroughForms = goThroughForms.bind(state);
+  
+  // Start looping
+  $('.table').each(goThroughForms);
+  
+  // state.settings has results
+  return state.settings;
+}
+
+function showStatus(msg, classId) {
+  $('#status').removeClass().html(msg);
+  if (classId) {
+    $('#status').addClass(classId);
+  }
+}
+</script>
