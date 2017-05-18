@@ -159,7 +159,10 @@ function _getHTML(input) {
             row_link = '';
         // if a row link exists, Add cell to object
         if (data[f][c]['row_link']) {
-          row_link = data[f][c]['row_link'][r];
+          row_link = '' + data[f][c]['row_link'][r];
+          if (row_link.search('http') === -1) {
+            row_link = 'http://' + row_link;
+          }
           html_body += '<td><a href="' + row_link + '">' + row + '</a></td>';
         }
         else {
