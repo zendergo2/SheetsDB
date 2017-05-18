@@ -3,6 +3,7 @@ function onOpen(e) {
       .createAddonMenu()
       .addItem('Sheet to JSON', 'showJSON')
       .addItem('Sheet to HTML', 'showHTML')
+      .addItem('Sheet to XML (beta)', 'showXML')
       .addToUi();
 }
 function onInstall(e) {
@@ -20,6 +21,13 @@ function showJSON() {
   var ui = HtmlService.createTemplateFromFile('JSON')
       .evaluate()
       .setTitle('Sheet to JSON');
+  SpreadsheetApp.getUi().showSidebar(ui);
+}
+
+function showXML() {
+  var ui = HtmlService.createTemplateFromFile('XML')
+      .evaluate()
+      .setTitle('Sheet to XML (beta)');
   SpreadsheetApp.getUi().showSidebar(ui);
 }
 
@@ -49,6 +57,8 @@ function getSheets () {
 
 function getExport(type, input) {
   switch (type) {
+    case 'xml':
+      return _getXML(input);
     case 'html':
       return _getHTML(input);
       break;
@@ -58,6 +68,53 @@ function getExport(type, input) {
     default:
       throw 'Export type not known/defined';
   }
+}
+
+function _getXML(input) {
+  var data = [],
+      heads = [],
+      i = 0;
+  
+  // get data from each form
+  input.forEach(function(elem, idx) {
+    data.push(getData(elem));
+  });
+  // data in form of:
+  //   [form #][col #][row|row_link][row #] = cell value
+  
+  var forms = [];
+  
+  // for each form f = [form #]
+  for (var f = 0; f < data.length; f++) {
+    var xml = '<Sheet' + (f + 1) + '>';
+    
+    // for each row r = [row #]
+    // All rows should be the same number of items
+    for (var r = 0; r < data[f][0]['row'].length; r++) {
+      xml += '<_' + (r + 1);
+      
+      // for each column c = [col #]
+      for (var c = 0; c < data[f].length; c++) {
+        
+        // Add cell to object (title of col -> value of each row)
+        var title = data[f][c]['title'].replace(/ /g, '_'),
+            row = data[f][c]['row'][r],
+            row_link = '';
+        
+        xml += ' ' + title + '="' + row + '"';
+        
+        if (data[f][c]['row_link']) {
+          row_link = data[f][c]['row_link'][r];
+        }
+      }
+      
+      xml += '/>';
+    }
+    
+    xml += '</Sheet' + (f + 1) + '>';
+    forms.push(xml);
+  }
+  return forms;
 }
 
 function _getHTML(input) {
@@ -103,9 +160,11 @@ function _getHTML(input) {
         // if a row link exists, Add cell to object
         if (data[f][c]['row_link']) {
           row_link = data[f][c]['row_link'][r];
+          html_body += '<td><a href="' + row_link + '">' + row + '</a></td>';
         }
-        
-        html_body += '<td>'+row+'</td>';
+        else {
+          html_body += '<td>' + row + '</td>';
+        }
       }
       
       html_body += '</tr>';
@@ -148,12 +207,13 @@ function _getJSON(input) {
         
         // Add cell to object (title of col -> value of each row)
         var title = data[f][c]['title'].toLowerCase(),
-            row = data[f][c]['row'][r];
+            row = data[f][c]['row'][r],
+            row_link = '';
+        
         cells[title] = row[0];
         
-        // if a row link exists, Add cell to object
         if (data[f][c]['row_link']) {
-          var row_link = data[f][c]['row_link'][r];
+          row_link = data[f][c]['row_link'][r];
           cells[title + '_link'] = row_link[0];
         }
       }

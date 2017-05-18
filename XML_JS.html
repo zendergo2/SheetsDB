@@ -1,0 +1,12 @@
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
+var export_type = 'xml';
+
+function previewFunc(data, ctr) {
+  var result = document.querySelector('#results-' + ctr + ' > .results-preview');
+  f_data = '<data>' + data[ctr - 1] + '</data>';
+  result.innerHTML = '<pre>' + f_data.replace(/</g, '\n&lt;') + '</pre>';
+  
+  $('#results-' + ctr + ' > .results-copy').val(f_data);
+}
+</script>
