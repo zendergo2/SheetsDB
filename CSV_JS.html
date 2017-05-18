@@ -1,0 +1,11 @@
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
+var export_type = 'csv';
+
+function previewFunc(data, ctr) {
+  var result = document.querySelector('#results-' + ctr + ' > .results-preview');
+  result.innerHTML = '<pre>' + data[ctr - 1] + '</pre>';
+  
+  $('#results-' + ctr + ' > .results-copy').val(data[ctr - 1].replace(/\\n/g, '\\n'));
+}
+</script>

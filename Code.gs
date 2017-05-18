@@ -4,6 +4,7 @@ function onOpen(e) {
       .addItem('Sheet to JSON', 'showJSON')
       .addItem('Sheet to HTML', 'showHTML')
       .addItem('Sheet to XML (beta)', 'showXML')
+      .addItem('Sheet to CSV (beta)', 'showCSV')
       .addToUi();
 }
 function onInstall(e) {
@@ -28,6 +29,13 @@ function showXML() {
   var ui = HtmlService.createTemplateFromFile('XML')
       .evaluate()
       .setTitle('Sheet to XML (beta)');
+  SpreadsheetApp.getUi().showSidebar(ui);
+}
+
+function showCSV() {
+  var ui = HtmlService.createTemplateFromFile('CSV')
+      .evaluate()
+      .setTitle('Sheet to CSV (beta)');
   SpreadsheetApp.getUi().showSidebar(ui);
 }
 
@@ -57,8 +65,12 @@ function getSheets () {
 
 function getExport(type, input) {
   switch (type) {
+    case 'csv':
+      return _getCSV(input);
+      break;
     case 'xml':
       return _getXML(input);
+      break;
     case 'html':
       return _getHTML(input);
       break;
@@ -68,6 +80,64 @@ function getExport(type, input) {
     default:
       throw 'Export type not known/defined';
   }
+}
+
+function _getCSV(input) {
+  var data = [],
+      heads = [],
+      i = 0;
+  
+  // get data from each form
+  input.forEach(function(elem, idx) {
+    data.push(getData(elem));
+  });
+  // data in form of:
+  //   [form #][col #][row|row_link][row #] = cell value
+  
+  var forms = [];
+  
+  // for each form f = [form #]
+  for (var f = 0; f < data.length; f++) {
+    var csv = '';
+    
+    /** For column titles **/
+    
+    // for each column c = [col #]
+    for (var c = 0; c < data[f].length; c++) {
+      var title = data[f][c]['title'];
+      csv += '"'+title+'",';
+    }
+    // remove trailing comma
+    csv = csv.substring(0, csv.length - 1);
+    
+    /** For data rows **/
+    
+    // for each row r = [row #]
+    // All rows should be the same number of items
+    for (var r = 0; r < data[f][0]['row'].length; r++) {
+      csv += '\n'
+      
+      // for each column c = [col #]
+      for (var c = 0; c < data[f].length; c++) {
+        
+        var row = data[f][c]['row'][r],
+            row_link = '';
+        
+        if (data[f][c]['row_link']) {
+          row_link = '' + data[f][c]['row_link'][r];
+          csv += '"=HYPERLINK(\"\"' + row_link + '\"\", \"\"' + row + '\"\")",';
+        }
+        else {
+          csv += '"' + row + '",';
+        }
+      }
+      // remove trailing comma
+      csv = csv.substring(0, csv.length - 1);
+    }
+    
+    forms.push(csv);
+  }
+  return forms;
 }
 
 function _getXML(input) {
@@ -96,7 +166,6 @@ function _getXML(input) {
       // for each column c = [col #]
       for (var c = 0; c < data[f].length; c++) {
         
-        // Add cell to object (title of col -> value of each row)
         var title = data[f][c]['title'].replace(/ /g, '_'),
             row = data[f][c]['row'][r],
             row_link = '';
@@ -105,6 +174,7 @@ function _getXML(input) {
         
         if (data[f][c]['row_link']) {
           row_link = data[f][c]['row_link'][r];
+          xml += ' ' + title + '_link="' + row + '"';
         }
       }
       
@@ -147,17 +217,15 @@ function _getHTML(input) {
     /** For data rows **/
     
     // for each row r = [row #]
-    // All rows should be the same number of items
     for (var r = 0; r < data[f][0]['row'].length; r++) {
       html_body += '<tr>';
       
       // for each column c = [col #]
       for (var c = 0; c < data[f].length; c++) {
         
-        // (title of col -> value of each row)
         var row = data[f][c]['row'][r],
             row_link = '';
-        // if a row link exists, Add cell to object
+        
         if (data[f][c]['row_link']) {
           row_link = '' + data[f][c]['row_link'][r];
           if (row_link.search('http') === -1) {
