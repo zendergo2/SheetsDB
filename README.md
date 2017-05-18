@@ -1,6 +1,6 @@
 # SheetsDB
 
-A powerful Drive App to export a Google Spreadsheet.
+A powerful and configurable Drive App to export a Google Spreadsheet into many different formats.
 
 [Install it now!](https://chrome.google.com/webstore/detail/sheet-to-data/mhmjmmomcaimcoefbhdggmijkjpblhgf)
 
@@ -8,16 +8,27 @@ While this is technically a work in progress, there is nothing here that will wr
 
 ## Features
 
-- Spreadsheet to JSON object
+- Spreadsheet to JSON, HTML, XML (beta), and CSV (beta)
   - Import directly into a database
   - Export & backup for safe keeping
 - Very few required options
-  - Just choose the columns to export & enjoy
+  - Just choose the sheets and columns to export & enjoy
   - Or, choose your own options and have more control
 - Filter out unwanted results
   - Remove empty rows or any other text
-- Export multiple sheets at once
+- Export multiple sheets in the same spreadsheet at one time
 - Save your settings for each spreadsheet
+  - Settings are saved per export format on each document
+  - Share your settings with all users of a spreadsheet
+- Make any column into working hyperlinks
+
+## Planned Features
+- Regex support for filtering out rows
+- Default configuration options so everything is optional
+- Save multiple different settings
+- Download exported files to computer instead of copying them
+- Upload exported files
+- Recurring exports
 
 
 ## Developing
