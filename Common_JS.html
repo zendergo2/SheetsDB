@@ -54,6 +54,10 @@ function loadSettings() {
   this.disabled = true;
   
   function fillForm (data, element) {
+    if (!data) {
+      showStatus('No settings to load', 'error');
+      element.disabled = false;
+    }
     var settings = JSON.parse(data),
         form_count = $('.table').length;
     
