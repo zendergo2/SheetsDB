@@ -10,7 +10,7 @@ $( function() {
   $('#options-save').click(saveSettings);
   $('#options-load').click(loadSettings);
   $('#options-add').click(addTable);
-  $('#options-generate').click(generateJSON);
+  $('#options-generate').click(generate);
   
   fillSheetNames('#form-0 select[name="sheet-id"]');
   
@@ -115,8 +115,8 @@ function addTable() {
     fillSheetNames('#form-' + table_count + ' select[name="sheet-id"]');
 }
 
-// Calls Code.gs functions to generate JSON from settings
-function generateJSON() {
+// Calls Code.gs functions to generate export from settings
+function generate() {
   this.disabled = true;
   
   google.script.run
