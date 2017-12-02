@@ -1,6 +1,6 @@
 # SheetsDB
 
-A powerful and configurable Drive App to export a Google Spreadsheet into many different formats.
+A Drive App to export a Google Spreadsheet into many different formats.
 
 [Install it now!](https://chrome.google.com/webstore/detail/sheet-to-data/mhmjmmomcaimcoefbhdggmijkjpblhgf)
 
