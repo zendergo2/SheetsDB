@@ -203,7 +203,7 @@ function _getHTML(input) {
   
   // for each form f = [form #]
   for (var f = 0; f < data.length; f++) {
-    var html_head = '<thead>',
+    var html_head = '<thead><tr>',
         html_body = '<tbody>';
     
     /** For column titles **/
@@ -242,7 +242,7 @@ function _getHTML(input) {
     }
     
     
-    html_head += '</thead>';
+    html_head += '</tr></thead>';
     html_body += '</tbody>';    
     
     forms.push('<table>' + html_head + html_body + '</table>');
