@@ -9,9 +9,10 @@ $( function() {
   $('#options-load').click(loadSettings);
   $('#options-add').click(addTable);
   $('#options-generate').click(generate);
-  
+  $('.options-remove').click(removeTable);
+
   fillSheetNames('#form-0 select[name="sheet-id"]');
-  
+
   form_template = $('.tables').first().html();
   results_template = $('.results-list').first().html();
 });
@@ -33,7 +34,7 @@ function fillSheetNames (selector) {
 // Save settings to current document's cloud storage
 function saveSettings() {
   this.disabled = true;
-  
+
   google.script.run
     .withUserObject(this)
     .withSuccessHandler(
@@ -52,7 +53,7 @@ function saveSettings() {
 // Load settings from current document's storage
 function loadSettings() {
   this.disabled = true;
-  
+
   function fillForm (data, element) {
     if (!data) {
       showStatus('No settings to load', 'error');
@@ -60,7 +61,7 @@ function loadSettings() {
     }
     var settings = JSON.parse(data),
         form_count = $('.table').length;
-    
+
     // Each set of forms
     settings.forEach(function(elem, idx) {
       // For all forms not already present
@@ -93,11 +94,11 @@ function loadSettings() {
         }
       });
     });
-    
+
     showStatus('Loaded successfully');
     element.disabled = false;
   }
-  
+
   google.script.run
     .withUserObject(this)
     .withSuccessHandler(fillForm)
@@ -113,27 +114,38 @@ function loadSettings() {
 function addTable() {
     table_count++;
     $('.tables').first().append(form_template);
-    $('.table:last-of-type')[0].id = 'form-' + table_count;
+    var newTable = $('.table:last-of-type');
+    newTable[0].id = 'form-' + table_count;
+
+    newTable.find('.options-remove').click(removeTable);
+
     fillSheetNames('#form-' + table_count + ' select[name="sheet-id"]');
+}
+
+// Removes the table associated with this button
+function removeTable(event) {
+  if ($('.table').size() > 1) {
+    $(event.target).parent().remove();
+  }
 }
 
 // Calls Code.gs functions to generate export from settings
 function generate() {
   this.disabled = true;
-  
+
   google.script.run
     .withUserObject(this)
     .withSuccessHandler(
       function(data, element) {
         var results_count = $('.results').length;
-        
+
         // Print out results per form/table
         for (var i = 1; i <= data.length; i++) {
           if (i > results_count) {
             addResults(results_count);
             results_count++;
           }
-          
+
           previewFunc(data, i);
         }
         showStatus('Generated successfully.');
@@ -148,7 +160,7 @@ function generate() {
     .getExport(export_type, _getFormData());
 }
 
-// Adds another table to the current form
+// Adds an export to the results set
 function addResults(count) {
     $('.results-list').first().append(results_template);
     $('.results:last-of-type')[0].id = 'results-' + (count + 1);
@@ -159,11 +171,11 @@ function _getFormData () {
   /** This is a design pattern for going through nested .each-like loops **/
   // state is bound to each function
   var state = {};
-  // settings is 2d array, # of forms x # inputs per form
+  // settings is a 2d array, [form #][input #]
   state.settings = [];
   // outer loop's index needs to be passed into goThroughInputs
   state.out_idx = 0;
-  
+
   // Inner loop
   function goThroughInputs (in_idx, elem) {
     this.settings[this.out_idx][in_idx] = {};
@@ -194,28 +206,28 @@ function _getFormData () {
         break;
     }
   }
-  
+
   // Outer loop
   function goThroughForms (idx, elem) {
     this.settings[idx] = [];
-    
+
     var inputs = $(elem).find('input'),
         selects = $(elem).find('select');
-    
+
     for (var i = 0; i < selects.length; i++) {
       inputs.push(selects[i]);
     }
-    
+
     this.out_idx = idx;
     inputs.each(goThroughInputs);
   }
-  
+
   goThroughInputs = goThroughInputs.bind(state);
   goThroughForms = goThroughForms.bind(state);
-  
+
   // Start looping
   $('.table').each(goThroughForms);
-  
+
   // state.settings has results
   return state.settings;
 }

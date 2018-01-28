@@ -3,9 +3,7 @@
 <?!= HtmlService.createHtmlOutputFromFile('CSS').getContent(); ?>
 
 <div>
-	<h1>
-  Export to HTML
-  </h1>
+	<h1> Export to HTML </h1>
 	<div class="block tables">
 		<div class="block table" id="form-0">
 			<?!= HtmlService.createHtmlOutputFromFile('Form').getContent(); ?>
@@ -18,16 +16,16 @@
 		<button id="options-add" class="action">Add a Table</button>
 		<button id="options-generate" class="create">Generate</button>
 	</div>
-    <pre class="block" id="status"></pre>
-    <div class="block results-list">
-	<div class="block results" id="results-1">
-		<label>Copy</label>
-		<input type="text" readonly="readonly" class="results-copy" size="30" value="" onClick="this.select()">
+	<pre class="block" id="status"></pre>
+	<div class="block results-list">
+		<div class="block results" id="results-1">
+			<label>Copy</label>
+			<input type="textarea" readonly="readonly" class="results-copy" size="30" value="" onclick="this.select()">
 
-        <label>Preview:</label>
-		<p class="results-preview"></p>
+			<label>Preview:</label>
+			<p class="results-preview"></p>
+		</div>
 	</div>
-    </div>
 </div>
 
 <!-- Use a templated HTML printing scriptlet to import JavaScript. -->
