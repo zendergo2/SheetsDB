@@ -100,10 +100,11 @@ function _getCSV(input) {
   for (var f = 0; f < data.length; f++) {
     var csv = '';
 
-    /** For column titles **/
+    /** For column titles (if they exist) **/
 
     // for each column c = [col #]
     for (var c = 0; c < data[f].length; c++) {
+      if (data[f][c]['title'] === false) break; // No header
       var title = data[f][c]['title'];
       csv += '"'+title+'",';
     }
@@ -166,6 +167,7 @@ function _getXML(input) {
       // for each column c = [col #]
       for (var c = 0; c < data[f].length; c++) {
 
+        if (data[f][c]['title'] === false) throw "Column titles are required for XML export";
         var title = data[f][c]['title'].replace(/ /g, '_'),
             row = data[f][c]['row'][r],
             row_link = '';
@@ -206,10 +208,11 @@ function _getHTML(input) {
     var html_head = '<thead><tr>',
         html_body = '<tbody>';
 
-    /** For column titles **/
+    /** For column titles (if they exist) **/
 
     // for each column c = [col #]
     for (var c = 0; c < data[f].length; c++) {
+      if (data[f][c]['title'] === false) break;
       var title = data[f][c]['title'];
       html_head += '<th>'+title+'</th>';
     }
@@ -277,6 +280,7 @@ function _getJSON(input) {
       for (var c = 0; c < data[f].length; c++) {
 
         // Add cell to object (title of col -> value of each row)
+        if (data[f][c]['title'] === false) data[f][c]['title'] = String.fromCharCode(c + 97); //TODO: columns after z
         var title = data[f][c]['title'].toLowerCase(),
             row = data[f][c]['row'][r],
             row_link = '';
@@ -335,29 +339,35 @@ function getData(form) {
   });
   // data now contains all form data
 
+  var titlesAreGenerated = !data['titles'];
   //  regex for matching and capturing "{A, B}, C..." etc.
   var regex = /(?:(\w+)|{(\w+)[, ]*(\w+)})/g,
       matches,
-      columns = [];
-  // (required) data['columns'] is the only field that needs to be filled out
-  for (var i = 0; (matches = regex.exec(data['columns'])) !== null; i++) {
-    if (matches.index === regex.lastIndex) {
-      regex.lastIndex++;
+      columns;
+  // (optional) Get override column data if it exists
+  if (regex.test(data['columns']) === true) {
+    regex.lastIndex = 0;
+    columns = [];
+    for (var i = 0; (matches = regex.exec(data['columns'])) !== null; i++) {
+      if (matches.index === regex.lastIndex) {
+        regex.lastIndex++;
+      }
+      // {A, B}
+      if (matches[2] && matches[3])
+        columns[i] = _getColumnValue(matches[2].toLowerCase().charCodeAt(0) - 96, matches[3].toLowerCase().charCodeAt(0) - 96);
+      // C
+      if (matches[1])
+        columns[i] = _getColumnValue(matches[1].toLowerCase().charCodeAt(0) - 96);
     }
-    // {A, B}
-    if (matches[2] && matches[3])
-      columns[i] = {'link_col': matches[2].toLowerCase().charCodeAt(0) - 96,
-                   'text_col': matches[3].toLowerCase().charCodeAt(0) - 96};
-    // C
-    if (matches[1])
-      columns[i] = {'text_col': matches[1].toLowerCase().charCodeAt(0) - 96};
+    // columns now contains json for columns to use
   }
-  // columns now contains json for columns to use
 
       // (optional) Sheet "sheet-name" or current sheet if no name given
   var sheet = (data['sheet-id'] ? getSheetById(data['sheet-id']) : SpreadsheetApp.getActiveSheet()),
+      // (optional) User-defined columns or all from sheet
+      columns = columns || getColumns(sheet),
       // (optional) column titles from form or sheet (or nothing if both don't exist);
-      titles = (data['titles'] ? data['titles'].split(/, */) : getTitles(sheet, columns)),
+      titles = (titlesAreGenerated ? getTitles(sheet, columns) : data['titles'].split(/, */)),
       // (required) row number that data starts on
       dataRowStart = (data['row-1-data'] === 'data') ? 1 : 2,
       // (optional) number of rows in table or programmatically count them
@@ -365,7 +375,7 @@ function getData(form) {
       // (optional) column nunmber to filter with or false
       filterCol = (data['filter-column'] ? data['filter-column'].toLowerCase().charCodeAt(0) - 96 : false),
       // (optional) data from the column used to filter out rows or false
-      filterColData = (filterCol ? sheet.getRange(dataRowStart, filterCol, size).getValues() : false),
+      filterColData = (filterCol ? sheet.getRange(dataRowStart, filterCol, size).getDisplayValues() : false),
       // (optional) strings for filtering or false
       filterCriteria = (filterCol && data['filter-criteria'] ? data['filter-criteria'].split(/, */): false);
 
@@ -376,30 +386,35 @@ function getData(form) {
   if (data['remove-empty'] === true) {
     if (filterCriteria === false) {
       filterCol = 1;
-      filterColData = sheet.getRange(dataRowStart, filterCol, size).getValues();
+      filterColData = sheet.getRange(dataRowStart, filterCol, size).getDisplayValues();
       filterCriteria = [];
     }
     filterCriteria.push("");
   }
 
+  // Generate data for exporters
   i = 0;
   while (columns[i]) {
-    columns[i].title = titles[i];
+    if (titlesAreGenerated === true && dataRowStart === 1) columns[i].title = false;
+    else columns[i].title = titles[i];
+
     if (columns[i].link_col) {
-      var linkColData = sheet.getRange(dataRowStart, columns[i].link_col, size).getValues();
+      var linkColData = sheet.getRange(dataRowStart, columns[i].link_col, size).getDisplayValues();
       columns[i].row_link = colFilter(linkColData, filterColData, filterCriteria);
     }
+
     if (columns[i].text_col) {
-      var textColData = sheet.getRange(dataRowStart, columns[i].text_col, size).getValues();
+      var textColData = sheet.getRange(dataRowStart, columns[i].text_col, size).getDisplayValues();
       columns[i].row = colFilter(textColData, filterColData, filterCriteria);
     }
+
     i++;
   }
   return columns;
 }
 
 // Takes a column, filter column, filter to removes filtered rows from currCol
-function colFilter(currCol, filterCol, filter) {
+function colFilter (currCol, filterCol, filter) {
   if (filterCol === false || filter === false) {
     return currCol;
   }
@@ -415,13 +430,30 @@ function colFilter(currCol, filterCol, filter) {
   return result;
 }
 
+// Returns a string representing a list of all columns present in the selected sheet
+function getColumns (sheet) {
+  var lastCol = sheet.getLastColumn(),
+      columns = [];
+  for (var i = 1; i <= lastCol; i++) {
+    columns.push(_getColumnValue(i));
+  }
+  return columns;
+}
+
+function _getColumnValue (textCol, linkCol) {
+  var colValue = {};
+  if (textCol) colValue['text_col'] = textCol;
+  if (linkCol) colValue['link_col'] = linkCol;
+  return colValue;
+}
+
 function getTitles (sheet, columns) {
   var allCols = sheet.getRange('A1:1'),
       result = [];
 
   for (var i = 0; i < columns.length; i++) {
     if (columns[i].text_col) {
-      var val = allCols.getCell(1, columns[i].text_col).getValue();
+      var val = allCols.getCell(1, columns[i].text_col).getDisplayValue();
 
       // If we need to look at cells for titles and at least one is blank, throw error
       if (val === "") {
