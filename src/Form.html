@@ -1,0 +1,29 @@
+<form>
+  <label>Name of Sheet (default is currently open sheet)<small>This is not referring to the Google Sheets file, but the currently open table</small></label>
+  <select name="sheet-id"></select>
+  <label>Columns to export (required, comma-separated)<small>Spaces are removed. For columns with links, format like {link, displaytext}</small></label>
+  <input type="text" name="columns" placeholder="{L,I}, K, E,   T, {H, I}, S" required>
+
+  <label>Is row 1 data or titles?</label>
+  <input type="radio" name="row-1-data" value="data"> <label>Row 1 contains data</label><br>
+  <input type="radio" name="row-1-data" value="titles" checked> <label>Row 1 contains row titles</label>
+
+  <div class="tab">
+    <label>Column titles in same order (semi-optional, comma-separated)<small>Required if row 1 contains data. Optional if you want to override row 1 titles.</small></label>
+    <input type="text" name="titles" placeholder="Apples, Oranges, Peaches">
+  </div>
+
+  <label>Column to use for filtering (optional)<small>Filtering can occur on one column.</small></label>
+  <input type="text" name="filter-column" size="3">
+
+  <div class="tab">
+    <label>Text to filter (optional, comma-separated)<small>We look at the column chosen in previous field. Filters <i>out</i> all rows that match text.</small></label>
+    <input type="text" name="filter-criteria" placeholder="0, N/A, Canceled">
+  </div>
+
+  <label>Remove empty rows?</label>
+  <input type="checkbox" name="remove-empty">
+
+  <label>Number of rows (optional)<small>If omitted, we will guess using the first column of data.</small></label>
+  <input type="number" name="size">
+</form>
