@@ -137,6 +137,7 @@ function generate() {
     .withUserObject(this)
     .withSuccessHandler(
       function(data, element) {
+        console.log(data);
         var results_count = $('.results').length;
 
         // Print out results per form/table

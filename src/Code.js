@@ -212,7 +212,9 @@ function _getHTML(input) {
 
     // for each column c = [col #]
     for (var c = 0; c < data[f].length; c++) {
-      if (data[f][c]['title'] === false) break;
+      if (data[f][c]['title'] === false) {
+        break;
+      }
       var title = data[f][c]['title'];
       html_head += '<th>'+title+'</th>';
     }
@@ -280,7 +282,7 @@ function _getJSON(input) {
       for (var c = 0; c < data[f].length; c++) {
 
         // Add cell to object (title of col -> value of each row)
-        if (data[f][c]['title'] === false) data[f][c]['title'] = String.fromCharCode(c + 97); //TODO: columns after z
+        if (data[f][c]['title'] === false) data[f][c]['title'] = String.fromCharCode(c + 97);
         var title = data[f][c]['title'].toLowerCase(),
             row = data[f][c]['row'][r],
             row_link = '';
