@@ -2,7 +2,7 @@
 
 A Drive App to export a Google Spreadsheet into many different formats.
 
-[Install it now!](https://chrome.google.com/webstore/detail/sheet-to-data/mhmjmmomcaimcoefbhdggmijkjpblhgf)
+No longer published on Chrome web store.
 
 While this is technically a work in progress, there is nothing here that will write to your Spreadsheet. This tool only writes to its own memory and its sandboxed [document settings](https://developers.google.com/apps-script/reference/properties/properties-service#getDocumentProperties()). Any bugs should only affect the use of SheetsDB and nothing more. Nonetheless, use at your own risk.
 
